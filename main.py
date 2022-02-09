@@ -57,9 +57,11 @@ for loginAccount in dictAccounts:
     #цикл для успешного входа на аккаунт. Даеться 3 попытки, иначе заноситься в базу, как не валид
     for attempt in range(3):
         
-        #переходим по ссылке входа и сразу попадаем на страницу заказов
-        browser.get('https://login.aliexpress.com/?returnUrl=https://trade.aliexpress.com/orderList.htm')
+        print('Попытка №' + str(attempt+1))
         
+        #переходим по ссылке входа и сразу попадаем на страницу заказов
+        #browser.get('https://login.aliexpress.com/?returnUrl=https://trade.aliexpress.com/orderList.htm')        
+        browser.get('https://login.aliexpress.com/setCommonCookie.htm?currency=USD&region=UA&bLocale=en_US&site=glo&return=https://trade.aliexpress.com/orderList.htm')
         
         #если не полностью вышло с акка
         try:        
@@ -135,9 +137,10 @@ for loginAccount in dictAccounts:
         html = browser.page_source
         soup = bs(html, "lxml")
         if soup.find_all('tbody', class_='order-item-wraper'):
-            print('Мы на аккаунте')
+            print('Удачный вход')
+            break
         else:
-            print('Мы не в аккаунте')
+            print('Ну удалось войти на аккаунт')
             if attempt == 2:
                 print('Акаунт   ' + str(loginAccount) + ' ошибочный')
                 errorsOrder.append([loginAccount, dictAccounts[loginAccount]])
