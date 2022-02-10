@@ -71,11 +71,14 @@ for loginAccount in dictAccounts:
         except:
             print()
 
+        try:        
+            #вводим логин
+            username = browser.find_element(By.NAME, "fm-login-id")
+            username.send_keys(loginAccount)  
+        except:
+            print()
 
-
-        #вводим логин
-        username = browser.find_element(By.NAME, "fm-login-id")
-        username.send_keys(loginAccount)    
+  
         
         #пытаемся вызвать слайдер верификации кликнув на корневой элемент
         try:        
@@ -85,13 +88,17 @@ for loginAccount in dictAccounts:
         except:
             print()
 
-        #вводим пароль
-        password = browser.find_element(By.NAME, "fm-login-password")
-        password.send_keys(dictAccounts[loginAccount])
+        try:        
+            #вводим пароль
+            password = browser.find_element(By.NAME, "fm-login-password")
+            password.send_keys(dictAccounts[loginAccount])
 
-        #кликаем по кнопке входа
-        submit = browser.find_element(By.CLASS_NAME, 'login-submit')
-        submit.click()
+            #кликаем по кнопке входа
+            submit = browser.find_element(By.CLASS_NAME, 'login-submit')
+            submit.click()
+
+        except:
+            print()
 
         #ждем чтобы появился слайдер верификации
         sleep(3)
