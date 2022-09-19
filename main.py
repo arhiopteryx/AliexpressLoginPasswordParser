@@ -42,6 +42,7 @@ options.add_argument(f"user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/53
 options.add_argument('--allow-profiles-outside-user-dir')
 options.add_argument("--disable-blink-features=AutomationControlled")
 options.add_experimental_option('useAutomationExtension', False)
+#options.set_headless(True)
 browser = webdriver.Chrome(options=options)
 
 #текущий номер аккаунта(для отладки)
@@ -143,7 +144,7 @@ for loginAccount in dictAccounts:
         #пытемся найти на странице надпись order чтобы проверить, вошли ли мы на аккаунт
         html = browser.page_source
         soup = bs(html, "lxml")
-        if soup.find_all('tbody', class_='order-item-wraper'):
+        if soup.find_all('tbody', class_='order-item-wraper') or soup.find_all('div', class_='order-item'):
             print('Удачный вход')
             break
         else:
@@ -153,30 +154,56 @@ for loginAccount in dictAccounts:
                 errorsOrder.append([loginAccount, dictAccounts[loginAccount]])
             continue
 
+    if soup.find_all('tbody', class_='order-item-wraper'):
+        #пытаемся спарсить данные заказов
+        try:
+            ordersValue = soup.find_all('tbody', class_='order-item-wraper')
+            i = 0
+            for order in ordersValue:
+                orderStatus = order.find('td', class_='order-status').find('span', class_='f-left').text.strip()
+                orderName = order.find('a',  class_= 'baobei-name').text.strip()
+                orderPrice = order.find('p',  class_= 'amount-num').text.strip()
 
-    #пытаемся спарсить данные заказов
-    try:
-        ordersValue = soup.find_all('tbody', class_='order-item-wraper')
-        i = 0
-        for order in ordersValue:
-            orderStatus = order.find('td', class_='order-status').find('span', class_='f-left').text.strip()
-            orderName = order.find('a',  class_= 'baobei-name').text.strip()
-            orderPrice = order.find('p',  class_= 'amount-num').text.strip()
+                trackCode = ''
 
-            trackCode = ''
+                if orderStatus == 'Awaiting delivery':
+                    trackCodeLink = 'https://trade.aliexpress.com/' + order.find('a', class_='view-detail-link').get('href')
+                    browser.get(trackCodeLink)
+                    sleep(2)
+                    soup2 = bs(browser.page_source, "lxml")  
+                    trackCode = soup2.find('td', class_='no').find('div').text.strip()
 
-            if orderStatus == 'Awaiting delivery':
-                trackCodeLink = 'https://trade.aliexpress.com/' + order.find('a', class_='view-detail-link').get('href')
-                browser.get(trackCodeLink)
-                sleep(2)
-                soup2 = bs(browser.page_source, "lxml")  
-                trackCode = soup2.find('td', class_='no').find('div').text.strip()
+                dataList.append([loginAccount, dictAccounts[loginAccount], orderStatus, orderName, orderPrice, i, trackCode])
+                i = i+1
+        except:
+            print('Ошибка считывания с аккаунта')
+            dataList.append([loginAccount, dictAccounts[loginAccount], 'Error', 'Error', 'Error', 'Error'])
 
-            dataList.append([loginAccount, dictAccounts[loginAccount], orderStatus, orderName, orderPrice, i, trackCode])
-            i = i+1
-    except:
-        print('Ошибка считывания с аккаунта')
-        dataList.append([loginAccount, dictAccounts[loginAccount], 'Error', 'Error', 'Error', 'Error'])
+    if soup.find_all('div', class_='order-item'):
+        #пытаемся спарсить данные заказов
+        try:
+            ordersValue = soup.find_all('div', class_='order-item')
+            i = 0
+            for order in ordersValue:
+                orderStatus = order.find('span', class_='order-item-header-status-text').text.strip()
+                orderName = order.find('div',  class_= 'order-item-content-info-name').find('span').text.strip()
+                orderPrice = order.find('span',  class_= 'order-item-content-opt-price-total').text.strip()
+
+                trackCode = ''
+
+                if orderStatus == 'Awaiting delivery':
+                    trackCodeLink = "https:" + order.find('a', class_='order-item-btn').get('href')
+                    #print(trackCodeLink)
+                    browser.get(trackCodeLink)
+                    sleep(2)
+                    soup2 = bs(browser.page_source, "lxml")  
+                    trackCode = soup2.find('div', class_='tracking-no').find('span').text.strip()
+
+                dataList.append([loginAccount, dictAccounts[loginAccount], orderStatus, orderName, orderPrice, i, trackCode])
+                i = i+1
+        except:
+            print('Ошибка считывания с аккаунта')
+            dataList.append([loginAccount, dictAccounts[loginAccount], 'Error', 'Error', 'Error', 'Error'])
 
     #выходм с аккаунта
     browser.get('https://login.aliexpress.com/xman/xlogout.htm')
